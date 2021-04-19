@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <record id="purchase_order_form_inherit_view" model="ir.ui.view">
+            <field name="name">purchase.order.form.inherit.view</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='order_line']/tree[1]/field[@name='product_qty']" position="after">
+                        <field name="unit_box" string="Pza/Cja" optional="show"/>
+                        <field name="has_wrong_boxes" attrs="{}" invisible="1"/>
+                        <field name="subtotal_box" optional="show" string="Cajas" decoration-danger="has_wrong_boxes == True"/>
+                  </xpath>
+                  <xpath expr="//field[@name='amount_untaxed']" position="before">
+                    <field name="total_box" string="Total Cajas"/>
+                  </xpath>
+            </field>
+        </record>
+        <!-- Create report -->
+        <template id="report_purchaseorder_document_inherit" inherit_id="purchase.report_purchaseorder_document">
+              <xpath expr="/t/t/div/table/thead/tr/th[4]" position="after">
+                <th>
+                  <span>Pza/Cja</span>
+                </th>
+              </xpath>
+              <xpath expr="/t/t/div/table/tbody/t[2]/tr/t[1]/td[4]" position="after">
+                <td class="text-center">
+                  <span t-field="line.unit_box"/>
+                </td>
+              </xpath>
+              <xpath expr="/t/t/div/table/tbody/t[2]/t[3]/tr/td" position="attributes">
+                <attribute name="colspan">100</attribute>
+              </xpath>
+              <xpath expr="/t/t/div/table/thead/tr/th[5]" position="after">
+                <th>
+                  <span>Cajas</span>
+                </th>
+              </xpath>
+              <xpath expr="/t/t/div/table/tbody/t[2]/tr/t[1]/td[5]" position="after">
+                <td class="text-center">
+                  <span t-field="line.subtotal_box"/>
+                </td>
+              </xpath>
+              <xpath expr="/t/t/div/table/tbody/t[2]/t[3]/tr/td" position="attributes">
+                <attribute name="colspan">101</attribute>
+              </xpath>
+              <xpath expr="/t/t/div/table" position="after">
+                <div class="row">
+                  <div class="col-3"/>
+                  <div class="col-3"/>
+                  <div class="col-3 text-center">
+                    <span>
+                      <strong>Total Cajas:</strong>
+                      <br/>
+                      <span t-field="o.total_box"/>
+                    </span>
+                  </div>
+                  <div class="col-3"/>
+                </div>
+              </xpath>
+        </template>
+    </data>
+</odoo>

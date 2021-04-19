@@ -1,0 +1,187 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* itatix_masterpack
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 13.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-11-28 17:08+0000\n"
+"PO-Revision-Date: 2020-11-28 10:10-0700\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: \n"
+"Language: es_MX\n"
+"X-Generator: Poedit 2.0.6\n"
+
+#. module: itatix_masterpack
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.report_delivery_boxes_document_inherit
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.report_picking_inherit
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.report_purchaseorder_document_inherit
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.report_saleorder_document_inherit
+msgid "<span>Cajas</span>"
+msgstr ""
+
+#. module: itatix_masterpack
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.report_saleorder_document_inherit
+msgid "<span>Piezas/Caja</span>"
+msgstr "<span>Pza/Cja</span>"
+
+#. module: itatix_masterpack
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.report_delivery_boxes_document_inherit
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.report_picking_inherit
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.report_purchaseorder_document_inherit
+msgid "<span>Pza/Cja</span>"
+msgstr "<span>Pza/Cja</span>"
+
+#. module: itatix_masterpack
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.report_purchasequotation_document_inherit
+msgid "<span>Subtotal Box</span>"
+msgstr "<span>Cajas</span>"
+
+#. module: itatix_masterpack
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.report_delivery_boxes_document_inherit
+msgid "<span>Total Cajas:</span>"
+msgstr "<span>Total Cajas:</span>"
+
+#. module: itatix_masterpack
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.report_purchasequotation_document_inherit
+msgid "<span>Unit Box</span>"
+msgstr "<span>Pza/Cja</span>"
+
+#. module: itatix_masterpack
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.report_purchasequotation_document_inherit
+msgid ""
+"<strong>Total Box:</strong>\n"
+"                      <br/>"
+msgstr ""
+
+#. module: itatix_masterpack
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.report_delivery_boxes_document_inherit
+msgid "<strong>Total Cajas:</strong>"
+msgstr ""
+
+#. module: itatix_masterpack
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.report_purchaseorder_document_inherit
+msgid ""
+"<strong>Total Cajas:</strong>\n"
+"                      <br/>"
+msgstr ""
+
+#. module: itatix_masterpack
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.report_saleorder_document_inherit
+msgid ""
+"<strong>Total Cajas:</strong>\n"
+"                  <br/>"
+msgstr ""
+
+#. module: itatix_masterpack
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.purchase_order_form_inherit_view
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.sale_order_form_inherit_view
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.stock_picking_form_inherit_view
+msgid "Cajas"
+msgstr ""
+
+#. module: itatix_masterpack
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.stock_picking_form_inherit_view
+msgid "Error Caja"
+msgstr ""
+
+#. module: itatix_masterpack
+#: model:ir.model.fields,field_description:itatix_masterpack.field_purchase_order_line__has_wrong_boxes
+#: model:ir.model.fields,field_description:itatix_masterpack.field_sale_order_line__has_wrong_boxes
+#: model:ir.model.fields,field_description:itatix_masterpack.field_stock_move__has_wrong_boxes
+#: model:ir.model.fields,field_description:itatix_masterpack.field_stock_move_line__has_wrong_boxes
+msgid "Has Wrong Boxes"
+msgstr "Cajas incorrectas"
+
+#. module: itatix_masterpack
+#: model:ir.model.fields,field_description:itatix_masterpack.field_product_product__master_pack
+#: model:ir.model.fields,field_description:itatix_masterpack.field_product_template__master_pack
+msgid "Master Pack"
+msgstr "Paquete maestro"
+
+#. module: itatix_masterpack
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.purchase_order_form_inherit_view
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.sale_order_form_inherit_view
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.stock_picking_form_inherit_view
+msgid "Piezas/Caja"
+msgstr "Pza/Cja"
+
+#. module: itatix_masterpack
+#: model:ir.model,name:itatix_masterpack.model_product_product
+msgid "Product"
+msgstr "Producto"
+
+#. module: itatix_masterpack
+#: model:ir.model,name:itatix_masterpack.model_stock_move_line
+msgid "Product Moves (Stock Move Line)"
+msgstr "Movimientos de Producto (Stock Move Line)"
+
+#. module: itatix_masterpack
+#: model:ir.model,name:itatix_masterpack.model_product_template
+msgid "Product Template"
+msgstr "Plantilla de producto"
+
+#. module: itatix_masterpack
+#: model:ir.model,name:itatix_masterpack.model_purchase_order
+msgid "Purchase Order"
+msgstr "Orden de Compra"
+
+#. module: itatix_masterpack
+#: model:ir.model,name:itatix_masterpack.model_purchase_order_line
+msgid "Purchase Order Line"
+msgstr "Línea de pedido de compra"
+
+#. module: itatix_masterpack
+#: model:ir.model,name:itatix_masterpack.model_sale_order
+msgid "Sales Order"
+msgstr "Pedido de venta"
+
+#. module: itatix_masterpack
+#: model:ir.model,name:itatix_masterpack.model_sale_order_line
+msgid "Sales Order Line"
+msgstr "Línea de pedido de venta"
+
+#. module: itatix_masterpack
+#: model:ir.model,name:itatix_masterpack.model_stock_move
+msgid "Stock Move"
+msgstr "Movimiento de existencias"
+
+#. module: itatix_masterpack
+#: model:ir.model.fields,field_description:itatix_masterpack.field_purchase_order_line__subtotal_box
+#: model:ir.model.fields,field_description:itatix_masterpack.field_sale_order_line__subtotal_box
+#: model:ir.model.fields,field_description:itatix_masterpack.field_stock_move__subtotal_box
+#: model:ir.model.fields,field_description:itatix_masterpack.field_stock_move_line__subtotal_box
+msgid "Subtotal Box"
+msgstr "Cajas"
+
+#. module: itatix_masterpack
+#: model:ir.model.fields,field_description:itatix_masterpack.field_purchase_order__total_box
+#: model:ir.model.fields,field_description:itatix_masterpack.field_sale_order__total_box
+#: model:ir.model.fields,field_description:itatix_masterpack.field_stock_picking__total_box
+msgid "Total Box"
+msgstr "Total Cajas"
+
+#. module: itatix_masterpack
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.purchase_order_form_inherit_view
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.sale_order_form_inherit_view
+#: model_terms:ir.ui.view,arch_db:itatix_masterpack.stock_picking_form_inherit_view
+msgid "Total Cajas"
+msgstr ""
+
+#. module: itatix_masterpack
+#: model:ir.model,name:itatix_masterpack.model_stock_picking
+msgid "Transfer"
+msgstr "Transferir"
+
+#. module: itatix_masterpack
+#: model:ir.model.fields,field_description:itatix_masterpack.field_purchase_order_line__unit_box
+#: model:ir.model.fields,field_description:itatix_masterpack.field_sale_order_line__unit_box
+#: model:ir.model.fields,field_description:itatix_masterpack.field_stock_move__unit_box
+#: model:ir.model.fields,field_description:itatix_masterpack.field_stock_move_line__unit_box
+msgid "Unit Box"
+msgstr "Pza/Cja"
