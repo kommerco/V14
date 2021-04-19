@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <record id="product_template_only_form_inherit_view" model="ir.ui.view">
+            <field name="name">product.template.form.inherit</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_only_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//form[@name='Product Template']/sheet[1]/notebook[1]/page[@name='inventory']/group[@name='inventory']" position="after">
+                    <group name="master_pack_general_group">
+                      <group name="master_pack">
+                        <field name="master_pack"/>
+                      </group>
+                    </group>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
