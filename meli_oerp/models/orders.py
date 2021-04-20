@@ -358,7 +358,7 @@ class mercadolibre_orders(models.Model):
                 if phone_json['extension']:
                     full_phone+= phone_json['extension']
 
-        if "receiver_phone" in buyer_json:
+        if "receiver_phone" in buyer_json and buyer_json["receiver_phone"]:
             full_phone+= buyer_json["receiver_phone"]
 
         return full_phone
