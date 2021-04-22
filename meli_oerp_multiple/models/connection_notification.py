@@ -48,6 +48,16 @@ class MercadoLibreConnectionNotification(models.Model):
     #Connection reference defining mkt place credentials
     connection_account = fields.Many2one( "mercadolibre.account", string="MercadoLibre Account" )
 
+    company = fields.Many2one("res.company",string="Company")
+    user = fields.Many2one("res.users",string="User")
+
+    limit_attempts = fields.Integer(string='Attempts limit')
+    model_ids_step = fields.Integer(string='Models Step Count')
+    model_ids_count = fields.Integer(string='Models Count')
+    model_ids_count_processed = fields.Integer(string='Models Count Processed')
+    model_ids = fields.Text(string="Models",readonly=False)
+    model_ids_processed = fields.Text(string="Models Processed",readonly=False)
+
     def _prepare_values(self, values, company=None, account=None ):
         if not account:
             return {}
@@ -61,6 +71,8 @@ class MercadoLibreConnectionNotification(models.Model):
             "notification_id": values["_id"],
             "application_id": values["application_id"],
             "user_id": values["user_id"],
+            "company": ("company" in values and values["company"]) or company.id,
+            "user": ("user" in values and values["user"]) or self.env.user.id,
             "topic": values["topic"],
             "resource": values["resource"],
             "received": ml_datetime(values["received"]),
@@ -68,12 +80,14 @@ class MercadoLibreConnectionNotification(models.Model):
             "attempts": values["attempts"],
             "state": "RECEIVED",
             'company_id': company.id,
-            'seller_id': seller_id
+            'seller_id': seller_id,
         }
-        if "processing_started" in values:
-            vals["processing_started"] = values["processing_started"]
+        ("model_ids" in values) and vals.update({"model_ids": values["model_ids"] })
+        ("model_ids_step" in values) and vals.update({"model_ids_step": values["model_ids_step"] })
+        ("model_ids_count" in values) and vals.update({"model_ids_count": values["model_ids_count"] })
+        ("model_ids_count_processed" in values) and vals.update({"model_ids_count_processed": values["model_ids_count_processed"] })
+        ("processing_started" in values) and vals.update({"processing_started": values["processing_started"] })
         return vals
-
 
     def fetch_lasts( self, data=None, company=None, account=None, meli=None):
 
@@ -138,7 +152,14 @@ class MercadoLibreConnectionNotification(models.Model):
 
         return {"error": "Error connecting to Meli.", "status": "520" }
 
-    def process_notification(self, meli=None):
+    def process_notification(self, context=None, meli=None):
+        context = context or self.env.context
+        _logger.info("context:"+str(context))
+        if context and "params" in context:
+            pars = context["params"]
+            if pars and ("id" in pars) and ("model" in pars) and (pars["model"] == "mercadolibre.notification"):
+                self = self.browse([pars["id"]])
+                _logger.info(self)
         result = []
         for noti in self:
             _logger.info("MercadoLibreConnectionNotification process notification")
@@ -148,6 +169,11 @@ class MercadoLibreConnectionNotification(models.Model):
                 if (noti.topic in ["order","created_orders","orders_v2"]):
 
                     res = noti._process_notification_order(meli=meli)
+                    if res:
+                        result.append(res)
+
+                if noti.topic == "internal_job":
+                    res = noti._process_notification_internal_job(meli=meli)
                     if res:
                         result.append(res)
 
@@ -163,8 +189,9 @@ class MercadoLibreConnectionNotification(models.Model):
                             result.append(r)
 
                     _logger.info("process_notification " + str(result))
-        return result
 
+
+        return result
 
     def _process_notification_order( self, meli=None):
         _logger.info("meli_oerp_multiple >> _process_notification_order")
@@ -220,6 +247,33 @@ class MercadoLibreConnectionNotification(models.Model):
                 _logger.error("meli_oerp_multiple >> _process_notification_order >> "+noti.processing_errors)
             finally:
                 noti.processing_ended = ml_datetime(str(datetime.now()))
+
+    def _process_notification_internal_job( self, meli=None):
+        _logger.info("meli_oerp_multiple >> _process_notification_internal_job")
+
+        account = self.connection_account
+        if not account:
+            return {}
+
+        company = account.company_id or self.env.user.company_id
+        config = account.configuration
+
+        if not meli:
+            meli = self.env['meli.util'].get_new_instance( company, account )
+
+        for noti in self:
+
+            noti.state = 'PROCESSING'
+            noti.processing_started = ml_datetime(str(datetime.now()))
+            if (config.mercadolibre_cron_post_update_stock):
+                _logger.info("config.mercadolibre_cron_post_update_stock True "+str(config.name))
+                account.meli_update_remote_stock_injobs( meli=meli, notification=noti )
+
+            if (config.mercadolibre_cron_post_update_price):
+                _logger.info("config.mercadolibre_cron_post_update_price True "+str(config.name))
+                #account.meli_update_remote_price_injobs( meli=meli, notification=noti )
+
+        return {}
 
     def start_internal_notification(self, internals, account=None):
 

@@ -18,3 +18,4 @@ from . import connection_configuration
 from . import connection_notification
 from . import wizards
 from . import product_image
+from . import stock_move
