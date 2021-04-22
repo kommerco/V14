@@ -21,6 +21,12 @@
           <xpath expr="//field[@name='application_id']" position="after">
             <field name='connection_account'/>
   				</xpath>
+          <xpath expr="//field[@name='received']" position="after">
+            <field name='model_ids'/>
+            <field name='model_ids_step'/>
+            <field name='model_ids_count'/>
+            <field name='model_ids_count_processed'/>
+  				</xpath>
   			</field>
   		</record>
 

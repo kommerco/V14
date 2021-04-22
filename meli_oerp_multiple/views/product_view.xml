@@ -39,6 +39,12 @@
                       confirm="¿Está seguro que quiere publicar/actualizar los datos en ML?"
                       class="oe_stat_button"
                       icon="fa-globe"/>
+                    <button name='product_template_post_stock' type="object"
+                      string="Publicar Stock"
+                      title="Publicar Stock en ML"
+                      confirm="¿Está seguro que quiere publicar/actualizar stock en ML?"
+                      class="oe_stat_button"
+                      icon="fa-globe"/>
                     <button name='product_template_update' type="object"
                       string="Importar"
                       title="Importar datos desde ML"
@@ -367,6 +373,13 @@
                     </page>
                 </notebook>
               </data>
+              <xpath expr="//div[@name='button_box_mel']" position="inside">
+                <button name='product_template_post_stock' type="object"
+                  string="Publicar Stock"
+                  title="Publicar Stock en ML"
+                  class="oe_stat_button"
+                  icon="fa-globe"/>
+              </xpath>
               <xpath expr="//group[@name='ML actions']" position="after">
                 <separator string="MercadoLibre Bindings" name="mercadolibre_bindings"/>
                 <!--group string="ML Bindings" name="ML Bindings"-->

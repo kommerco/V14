@@ -94,3 +94,13 @@ class ResCompany(models.Model):
                 account.meli_query_products()
 
         return result
+
+    def cron_meli_process_internal_jobs(self):
+        _logger.info("company cron_meli_process_internal_jobs")
+        company = self or self.env.user.company_id
+        for comp in company:
+
+            for account in comp.mercadolibre_connections:
+
+                _logger.info('cron_meli_process_internal_jobs for: ' +str(comp.name) + str(" >> ") + str(account.name))
+                account.cron_meli_process_internal_jobs()

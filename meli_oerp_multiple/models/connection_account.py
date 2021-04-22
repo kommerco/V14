@@ -33,7 +33,7 @@ except ImportError:
     from urllib.parse import urlencode
 from . import versions
 from .versions import *
-
+import json
 
 class MercadoLibreConnectionAccount(models.Model):
 
@@ -75,6 +75,16 @@ class MercadoLibreConnectionAccount(models.Model):
     mercadolibre_product_bindings = fields.One2many( "mercadolibre.product", "connection_account", string="Product Variant Bindings" )
     mercadolibre_orders = fields.One2many( "mercadolibre.orders", "connection_account", string="Orders" )
 
+    def meli_refresh_token(self):
+        _logger.info("meli_refresh_token")
+        self.ensure_one()
+        company = self.company_id or self.env.user.company_id
+        _logger.info(self.name)
+        _logger.info(self.company_id.name)
+        meli = self.env['meli.util'].get_new_instance( company, self )
+
+        _logger.info("meli:"+str(meli))
+
     def meli_login(self):
         _logger.info("meli_login")
         _logger.info('company.meli_login() ')
@@ -109,6 +119,23 @@ class MercadoLibreConnectionAccount(models.Model):
         return {}
 
 #MELI CRON
+
+    def cron_meli_process_internal_jobs(self):
+        _logger.info('account cron_meli_process_internal_jobs() ')
+        for connacc in self:
+
+            company = connacc.company_id or self.env.user.company_id
+            config = connacc.configuration or company
+            #warningobj = self.pool.get('warning')
+
+            apistate = self.env['meli.util'].get_new_instance( company, connacc)
+            if apistate.needlogin_state:
+                return True
+
+            if (config.mercadolibre_cron_post_update_stock):
+                _logger.info("config.mercadolibre_cron_post_update_stock True "+str(config.name))
+                connacc.meli_update_remote_stock_injobs( meli=apistate )
+
 
     def cron_meli_orders(self):
         _logger.info('account cron_meli_orders() ')
@@ -870,6 +897,139 @@ class MercadoLibreConnectionAccount(models.Model):
 
         return {}
 
+    def meli_update_remote_stock_injobs(self, meli=False, notification=None):
+        account = self
+        _logger.info('account.meli_update_remote_stock_injobs() '+str(account.name))
+        company = account.company_id or self.env.user.company_id
+        config = account.configuration or company
+
+        if not meli:
+            meli = self.env['meli.util'].get_new_instance( company, account )
+            #if meli.need_login():
+            #    return meli.redirect_login()
+
+        noti_ids = (notification and [('id','=',notification.id)] ) or []
+        _logger.info('account.meli_update_remote_stock_injobs() mercadolibre_cron_post_update_stock: '+str(config.mercadolibre_cron_post_update_stock)+" noti_ids: "+str(noti_ids))
+        if (config.mercadolibre_cron_post_update_stock):
+            auto_commit = not getattr(threading.currentThread(), 'testing', False)
+
+            icommit = 0
+            icount = 0
+            notifs = self.env["mercadolibre.notification"].search( noti_ids + [('topic','=','internal_job'),
+                                                                ('resource','like','meli_update_remote_stock%'),
+                                                                ('state','!=','SUCCESS'),
+                                                                ('state','!=','FAILED'),
+                                                                ('connection_account','=',account.id) ],
+                                                                limit=40)
+
+            _logger.info("meli_update_remote_stock_injobs > internal_job meli_update_remote_stock: "+str(notifs)+" state:"+str(notifs.mapped('state')) )
+
+            if not notifs:
+                _logger.info("meli_update_remote_stock_injobs > internal_job meli_update_remote_stock: NO stock internal_job.")
+                return {}
+
+            max_ustocks = 100
+            actual_ustock = 0
+            full_pids = []
+            for noti in notifs:
+
+                product_ids = (noti.model_ids and json.loads(noti.model_ids)) or []
+                product_ids_processed = (noti.model_ids_processed and json.loads(noti.model_ids_processed)) or []
+                notpids = (product_ids_processed and [('product_ids','not in', product_ids_processed)]) or []
+
+                #filtering processed
+                pids = []
+                for p in product_ids:
+                    if p not in product_ids_processed and p not in pids and p not in full_pids:
+                        pids.append(p)
+                        full_pids.append(p)
+
+                product_ids = pids
+
+                _logger.info("Processing model_ids (product.product) : "+str(product_ids))
+                product_bind_ids = self.env['mercadolibre.product'].search([
+                    #('connection_account', '=', account.id )
+                    #'|',('company_id','=',False),('company_id','=',company.id)
+                    ('product_id', 'in', product_ids )],
+                    order='stock_update asc, product_id asc')
+                _logger.info("product_bind_ids stock to update:" + str(product_bind_ids))
+                _logger.info("account updating stock #" + str(len(product_bind_ids)) + " on " + str(account.name))
+                _logger.info("product_ids: "+str(product_ids))
+                _logger.info("product_ids_processed: "+str(product_ids_processed))
+                _logger.info("notpids: "+str(notpids))
+                _logger.info("product_bind_ids: "+str(product_bind_ids))
+                maxcommits = len(product_bind_ids)
+                logs = noti.processing_logs or ""
+                errors = noti.processing_errors or ""
+
+                try:
+                    if auto_commit:
+                        self.env.cr.commit()
+                    pid = None
+                    for bind in product_bind_ids:
+                        obj = bind #.product_id
+                        #_logger.info( "Product check if active: " + str(obj.id)+ ' meli_id:'+str(obj.meli_id)  )
+                        if (obj and obj.meli_id):
+                            icommit+= 1
+                            icount+= 1
+                            actual_ustock+= 1
+                            try:
+                                _logger.info( "Update Stock: #" + str(icount) +'/'+str(maxcommits)+ ' meli_id:'+str(obj.meli_id)  )
+                                resjson = obj.product_post_stock(meli=meli)
+                                logs+= str(obj.sku)+" "+str(obj.meli_id)+": "+str(obj.meli_available_quantity)+"\n"
+                                if resjson and "error" in resjson:
+                                    errors+= str(obj.sku)+" "+str(obj.meli_id)+" >> "+str(resjson)+"\n"
+                                #obj.stock_update = ml_datetime( str( datetime.now() ) )
+
+                                #record product processed by bindings
+                                if (pid==None):
+                                    pid = obj.product_id.id
+                                if (pid!=obj.product_id.id or icount==maxcommits) and obj.product_id.id not in product_ids_processed:
+                                    product_ids_processed.append(obj.product_id.id)
+                                    _logger.info("product_ids_processed: #"+str(len(product_ids_processed)))
+                                pid = obj.product_id.id
+
+                                if ( (actual_ustock>=max_ustocks) or (icommit==40 or (icount==maxcommits) or (icount==noti.model_ids_step))  and 1==1):
+                                    noti.processing_errors = errors
+                                    noti.processing_logs = logs
+                                    noti.model_ids_processed = str(product_ids_processed)
+                                    noti.model_ids_count_processed = len(product_ids_processed)
+                                    noti.resource = "meli_update_remote_stock #"+str(icount) +'/'+str(maxcommits)
+                                    _logger.info("meli_update_remote_stock_injobs commiting")
+                                    icommit=0
+                                    if auto_commit:
+                                        self.env.cr.commit()
+                                    #max steps by iteration reached
+                                    if (icount>=noti.model_ids_step and icount<maxcommits):
+                                        return {}
+                                    #max updates on cron iteration reached:
+                                    if (actual_ustock>=max_ustocks):
+                                        _logger.info("meli_update_remote_stock_injobs max_ustocks reached:"+str(max_ustocks))
+                                        return {}
+
+
+                            except Exception as e:
+                                _logger.info("meli_update_remote_stock > Exception founded!")
+                                _logger.info(e, exc_info=True)
+                                logs+= str(obj.sku)+" "+str(obj.meli_id)+": "+str(obj.meli_available_quantity)+", "
+                                #errors+= str(obj.default_code)+" "+str(obj.meli_id)+" >> "+str(e.args[0])+str(", ")
+                                errors+= str(obj.sku)+" "+str(obj.meli_id)+" >> "+str(e)+"\n"
+                                if auto_commit:
+                                    self.env.cr.rollback()
+
+                    noti.resource = "meli_update_remote_stock_injobs #"+str(icount) +'/'+str(maxcommits)
+                    noti.stop_internal_notification(errors=errors,logs=logs)
+
+                except Exception as e:
+                    _logger.info("meli_update_remote_stock_injobs > Exception founded!")
+                    _logger.info(e, exc_info=True)
+                    if auto_commit:
+                        self.env.cr.rollback()
+                    noti.stop_internal_notification( errors=errors , logs=logs )
+                    if auto_commit:
+                        self.env.cr.commit()
+
+        return {}
 
     def meli_update_remote_price(self, meli=None):
 
@@ -1463,6 +1623,8 @@ class MercadoLibreConnectionAccount(models.Model):
         so = False
 
         _logger.info(sale)
+        return result
+
         psoid = sale["id"]
 
         if not psoid:

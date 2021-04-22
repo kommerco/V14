@@ -8,7 +8,7 @@
 
 {
     'name': 'MercadoLibre Multiple Accounts / Mercado Libre Publisher Extension',
-    'version': '14.0.21.23',
+    'version': '14.0.21.30',
     'author': 'Moldeo Interactive',
     'website': 'https://www.moldeointeractive.com',
     "category": "Sales",
@@ -26,6 +26,7 @@
         'views/sale_view.xml',
         'views/wizards_view.xml',
         'data/data.xml',
+        'data/cron_jobs.xml',
     	#'views/category_view.xml',
     	#'views/banner_view.xml',
         'views/warning_view.xml',

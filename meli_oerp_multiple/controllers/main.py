@@ -31,14 +31,20 @@ class MercadoLibre(MercadoLibre):
     def meli_notify(self, meli_login_id=None, **kw):
 
         _logger.info("Meli Notify Multiple: "+str(meli_login_id))
-
+        meli_account = None
+        data = json.loads(request.httprequest.data)
+        _logger.info(data)
         if not meli_login_id:
-            return ""
+            user_id = "user_id" in data and data["user_id"]
+            app_id = "application_id" in data and data["application_id"]
+            meli_account = request.env['mercadolibre.account'].sudo().search([('seller_id','=',user_id),('client_id','=',app_id)])
+            if not meli_account:
+                return ""
 
         _logger.info("User: "+str(request.env.user))
         _logger.info("User Name: "+str(request.env.user.name))
-
-        meli_account = request.env['mercadolibre.account'].sudo().search([('meli_login_id','=',meli_login_id)])
+        if not meli_account:
+            meli_account = request.env['mercadolibre.account'].sudo().search([('meli_login_id','=',meli_login_id)])
         _logger.info("Search meli_account: " + str(meli_account.name) )
         if not meli_account:
             return "Account not founded."
@@ -51,8 +57,7 @@ class MercadoLibre(MercadoLibre):
         #_logger.info(company.display_name)
         #_logger.info(kw)
         #_logger.info(request)
-        data = json.loads(request.httprequest.data)
-        _logger.info(data)
+
         result = meli_account.sudo().meli_notifications(data=data,meli=meli)
         if (result and "error" in result):
             return Response(result["error"],content_type='text/html;charset=utf-8',status=result["status"])

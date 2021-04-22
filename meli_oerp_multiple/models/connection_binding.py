@@ -106,7 +106,9 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
     meli_catalog_item_relations = fields.Char(string='Catalog Item Relations', size=256)
     meli_catalog_automatic_relist = fields.Boolean(string='Catalog Auto Relist', size=256)
 
-    def product_template_post( self, context=None, meli_id=None, meli=None, account=None ):
+    meli_shipping_logistic_type = fields.Char(string="Logistic Type",index=True)
+
+    def product_template_post( self, context=None, meli_id=None, meli=None, account=None, product_variant=None ):
         context = context or self.env.context
         _logger.info("MercadoLibre Product template Post context: "+str(context)+" meli_id: "+str(meli_id)+" account: "+str(account))
         warningobj = self.env['warning']
@@ -149,7 +151,22 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
                     if ('name' in ret[0]):
                         return ret[0]
                     posted_products+= 1
-                    continue;
+                    bindT.stock = 0
+                    for variant in productT.product_variant_ids:
+                        if variant.meli_id:
+                            #binding is anew, set with last meli_id if we can
+                            meli_id = variant.meli_id
+                            meli_price = variant.meli_price
+                            meli_available_quantity = variant.meli_available_quantity
+
+                            bindT.conn_id = meli_id
+                            bindT.price = meli_price
+                            bindT.stock+= float(meli_available_quantity)
+
+                            for bind in bindT.variant_bindings:
+                                bind.conn_id = meli_id
+                                bind.price = meli_price
+                    #continue;
                 else:
                     #binded but not principal variants.meli_id != bindT.meli_id
                     _logger.info("TODO: Check this bind how to post it!!!")
@@ -183,22 +200,29 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
                         _logger.info("No condition met for:"+variant.display_name)
                 _logger.info(productT.meli_pub_variant_attributes)
             else:
-
                 for variant in productT.product_variant_ids:
-                    _logger.info("Variant: ", variant, variant.meli_pub)
+                    _logger.info("product_template_post > Posting Variant: ", variant, variant.meli_pub)
+                    if product_variant and product_variant.id!=variant.id:
+                        #only one product variant to import on this iteration
+                        continue;
 
                     if (force_meli_pub==True):
                         variant.meli_pub = True
+
+                    if force_meli_new_pub:
+                        meli_id = False
 
                     first_product_post = (not meli_id and not variant.meli_id)
                     new_product_post = (variant.meli_id and not meli_id) and force_meli_new_pub
                     update_product_post = (variant.meli_id and not meli_id) and force_meli_new_pub
 
+                    _logger.info("meli_id:"+str(meli_id)+" variant.meli_id:"+str(variant.meli_id)+" force_meli_new_pub:"+str(force_meli_new_pub))
+                    _logger.info("first_product_post:"+str(first_product_post)+" new_product_post:"+str(new_product_post)+" update_product_post:"+str(update_product_post))
+
                     if (variant.meli_pub and (variant.meli_id==meli_id or first_product_post) ):
 
                         _logger.info("Posting variant")
                         ret = variant.with_context(custom_context).product_post( meli=meli, config=config )
-
                         if ('name' in ret[0]):
                             return ret[0]
                         _logger.info(ret)
@@ -244,13 +268,31 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
                         #if error_product_post:
                         #    _logger.info("error_product_post: "+str(error_product_post))
                         #binding is new, take the first variant meli_id:
-                        error = "No meli_pub or meli_id for:"+variant.display_name + " bind>meli_id: "+str(meli_id) + " meli_pub:" + str(variant.meli_pub) + " variant.meli_id:"+str(variant.meli_id)+ " error_product_post:"+str(error_product_post)
+                        error = "No meli_pub or meli_id for:"+variant.display_name + " bind>meli_id: "+str(meli_id) + " meli_pub:" + str(variant.meli_pub) + " variant.meli_id:"+str(variant.meli_id)
+                        #+ " error_product_post:"+str(error_product_post)
                         raise ValidationError(error)
                         _logger.info(error)
 
         if (posted_products==0):
             raise ValidationError("Se intentaron publicar 0 productos. Debe forzar las publicaciones o marcar el producto con el campo Meli Publication, debajo del titulo. Puede tambien intentar revincular el producto.")
             ret = warningobj.info( title='MELI WARNING', message="Se intentaron publicar 0 productos. Debe forzar las publicaciones o marcar el producto con el campo Meli Publication, debajo del titulo. Puede tambien intentar revincular el producto.", message_html="" )
+
+        return ret
+
+    def product_template_post_stock( self, context=None, meli_id=None, meli=None, account=None ):
+        _logger.info("template product_template_update >> MercadoLibre Product template Update")
+        ret = {}
+        for bindT in self:
+
+            account = bindT.connection_account
+            product = bindT.product_tmpl_id
+            meli_id = bindT.conn_id
+
+            if not meli:
+                meli = self.env['meli.util'].get_new_instance( account.company_id, account )
+
+            for bindv in bindT.variant_bindings:
+                bindv.product_post_stock(meli=meli)
 
         return ret
 
@@ -342,6 +384,8 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
             bindT.sku = productT.product_variant_ids.mapped("default_code") or productT.default_code
             bindT.barcode = productT.product_variant_ids.mapped("barcode") or productT.barcode
 
+            bindT.meli_shipping_logistic_type = str(productT.product_variant_ids.mapped("meli_shipping_logistic_type"))
+
 
     def copy_from_rjson( self, rjson, meli=None ):
         _logger.info("template bind >> copy_from_rjson")
@@ -377,6 +421,8 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
                 #'meli_video': str(vid),
                 #'meli_dimensions': meli_dim_str,
             }
+            meli_shipping_logistic_type = ( rjson and "shipping" in rjson and "logistic_type" in rjson["shipping"] and rjson["shipping"]["logistic_type"] ) or ""
+            meli_shipping_logistic_type and fields.update({'meli_shipping_logistic_type': meli_shipping_logistic_type })
             bindT.write(fields)
 
             for bind in bindT.variant_bindings:
@@ -685,6 +731,8 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
             bind.stock = product.meli_available_quantity
             bind.meli_available_quantity = product.meli_available_quantity
 
+            bind.meli_shipping_logistic_type = product.meli_shipping_logistic_type
+
             #attributes
             bind.meli_attributes = product.meli_attributes
             bind.meli_model = product.meli_model
@@ -757,6 +805,9 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                 #'meli_video': str(vid),
                 #'meli_dimensions': meli_dim_str,
             }
+            meli_shipping_logistic_type = ( rjson and "shipping" in rjson and "logistic_type" in rjson["shipping"] and rjson["shipping"]["logistic_type"] ) or ""
+            meli_shipping_logistic_type and fields.update({'meli_shipping_logistic_type': meli_shipping_logistic_type })
+
             _logger.info("variant bind >> copy_from_rjson: var id: "+str(fields["meli_id_variation"])+" sku: "+str(fields["sku"])+" barcode: "+str(fields["barcode"]) )
             bind.write(fields)
 
@@ -870,8 +921,13 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                 bindv.meli_available_quantity = product._meli_available_quantity( meli_id=meli_id, meli=meli, config=config)
                 bindv.stock = bindv.meli_available_quantity
                 if bindv.meli_inventory_id:
-                    bindv.stock_update = ml_datetime( str( datetime.now() ) )
-                    return {}
+                    logistic_type = bindv.product_id._meli_update_logistic_type(meli_id=meli_id, meli=meli,config=config)
+                    if logistic_type and logistic_type in ["fulfillment"]:
+                        bindv.stock_update = ml_datetime( str( datetime.now() ) )
+                        res = { "error": "fulfillment"}
+                        bindv.stock_error = str(res)
+                        _logger.info(bindv.stock_error)
+                        return res
                 res = product.x_product_post_stock( context=context, meli=meli, config=config, meli_id=meli_id, meli_id_variation=meli_id_variation, target=bindv )
                 if res and 'error' in res:
                     if 'fulfillment' in str(res):
@@ -879,6 +935,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                     bindv.stock_error = str(res)
                     bindv.stock_update = ml_datetime( str( datetime.now() ) )
                     return res
+                bindv.meli_inventory_id = None
                 #more than one
                 bindv.stock_error = "Ok"
                 bindv.stock_update = ml_datetime( str( datetime.now() ) )

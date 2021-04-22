@@ -176,6 +176,9 @@ class MercadoLibreConnectionConfiguration(models.Model):
     mercadolibre_process_payments_journal = fields.Many2one("account.journal",string="Account Journal for MercadoLibre")
     mercadolibre_process_payments_res_partner = fields.Many2one("res.partner",string="MercadoLibre Partner")
 
+    mercadolibre_order_confirmation_hook = fields.Char(string="Order Hook",help="https://www.hookserver.com/app")
+    mercadolibre_product_confirmation_hook = fields.Char(string="Product Hook",help="https://www.hookserver.com/app")
+
     def copy_from_company( self, context=None, company=None ):
         context = context or self.env.context
         company = company or (self.accounts and self.accounts[0].company_id) or self.env.user.company_id

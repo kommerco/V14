@@ -129,7 +129,7 @@ class ProductTemplateBindUpdate(models.TransientModel):
         _logger.info("binding_product_template_update (MercadoLibre)")
 
         company = self.env.user.company_id
-        bind_ids = context['active_ids']
+        bind_ids = ('active_ids' in context and context['active_ids']) or []
         bindobj = self.env['mercadolibre.product_template']
 
         res = {}
@@ -160,7 +160,7 @@ class ProductVariantBindUpdate(models.TransientModel):
         
         warningobj = self.env['warning']
         company = self.env.user.company_id
-        bind_ids = context['active_ids']
+        bind_ids = ('active_ids' in context and context['active_ids']) or []
         bindobj = self.env['mercadolibre.product']
 
         rest = []
@@ -298,7 +298,7 @@ class ProductTemplatePostExtended(models.TransientModel):
                                                     'force_meli_active': self.force_meli_active
                                                 }
                                                 ).product_template_post( context=None, account=mercadolibre, meli=meli )
-                    if 'name' in res:
+                    if res and 'name' in res:
                         return res
         
         return res        
