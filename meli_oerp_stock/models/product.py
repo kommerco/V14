@@ -29,6 +29,7 @@ import pdb
 #from .warning import warning
 import requests
 from odoo.addons.meli_oerp.melisdk.meli import Meli
+from odoo.addons.meli_oerp.models.versions import *
 
 class product_product(models.Model):
 
