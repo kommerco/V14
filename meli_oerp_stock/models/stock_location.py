@@ -31,6 +31,7 @@ import pdb
 
 import requests
 #from ..melisdk.meli import Meli
+from odoo.addons.meli_oerp.models.versions import *
 
 
 class stock_move(models.Model):
