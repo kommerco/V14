@@ -141,7 +141,7 @@ class product_product(models.Model):
 
         meli_id = meli_id or self.meli_id
         #_logger.info("meli_oerp_stock._meli_virtual_available "+str(product._meli_virtual_available()))
-        virtual_av = product._meli_virtual_available( meli_id=meli_id, meli=meli )
+        virtual_av = product._meli_virtual_available( meli_id=meli_id, meli=meli, config=config )
         new_meli_available_quantity = virtual_av
 
         # Chequea si es fabricable
@@ -211,7 +211,7 @@ class product_product(models.Model):
             if (1==1 and _stock>=0 and product._meli_available_quantity(meli=meli,config=config)!=_stock):
                 _logger.info("Updating stock for variant." + str(_stock) )
                 #wh = self.env['stock.location'].search([('usage','=','internal')]).id
-                wh = product._meli_get_location_id(meli_id=product.id,meli=meli,config=config)
+                wh = product._meli_get_location_id(meli_id=product.meli_id,meli=meli,config=config)
                 _logger.info("Updating stock for variant. location: " + str(wh and wh.display_name) )
                 #product_uom_id = uomobj.search([('name','=','Unidad(es)')])
                 #if (product_uom_id.id==False):
