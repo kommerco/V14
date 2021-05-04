@@ -584,14 +584,8 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
 
         _logger.info("bind variant >> product_get_meli_update")
 
-        account = self.connection_account
-
-        company = (account and account.company_id) or self.env.user.company_id
-
         warningobj = self.env['warning']
         product_obj = self.env['product.product']
-
-        meli = self.env['meli.util'].get_new_instance( company, account )
 
         ML_status = "unknown"
         ML_sub_status = ""
@@ -599,12 +593,16 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
         ML_state = False
         #meli = None
 
-        if meli.need_login():
-            ML_status = "unknown"
-            ML_permalink = ""
-            ML_state = True
-
         for product in self:
+
+            account = product.connection_account
+            company = (account and account.company_id) or self.env.user.company_id
+            meli = self.env['meli.util'].get_new_instance( company, account )
+            if meli.need_login():
+                ML_status = "unknown"
+                ML_permalink = ""
+                ML_state = True
+
             if product.conn_id and not product.meli_id:
                 product.meli_id = product.conn_id
 
