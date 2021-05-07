@@ -174,14 +174,16 @@ class product_template(models.Model):
         return pt_bind
 
     def product_template_update( self, meli_id=None, meli=None, account=None ):
-        _logger.info("product.template >> product_template_update meli_id: "+str(meli_id)+" account: "+str(account))
+        _logger.info("product.template >> product_template_update meli_id: "+str(meli_id)+" account: "+str(account)+" meli: "+str(meli))
         res = {}
         for productT in self:
             if not productT.mercadolibre_bindings:
                 #bind and continue
+                _logger.info("bind and continue: "+str(meli))
                 productT.mercadolibre_bind_to( account=account, meli_id=meli_id, meli=meli )
 
             for bindT in productT.mercadolibre_bindings:
+                _logger.info("Update bindings: bindT:"+str(bindT))
                 res = bindT.product_template_update( meli=meli )
                 if 'name' in res:
                     return res
@@ -1012,10 +1014,11 @@ class product_product(models.Model):
 
         return {}
 
-    def product_update_stock(self, stock=False, meli=False, config=None):
+    def product_update_stock(self, stock=False, meli_id=False, meli=False, config=None):
         product = self
         uomobj = self.env[uom_model]
         _stock = product.virtual_available
+        meli_id = meli_id or product.meli_id
 
         try:
             if (stock!=False):
@@ -1026,15 +1029,16 @@ class product_product(models.Model):
             if (product.default_code):
                 product.set_bom()
 
-            if (product.meli_default_stock_product):
+            if (product.meli_default_stock_product and meli_id!=product.meli_id):
                 _stock = product.meli_default_stock_product._meli_available_quantity(meli=meli,config=config)
                 if (_stock<0):
                     _stock = 0
 
-            if (1==1 and _stock>=0 and product._meli_available_quantity(meli=meli,config=config)!=_stock):
+            if (1==1 and _stock>=0 and product._meli_available_quantity( meli_id=meli_id, meli=meli, config=config )!=_stock):
                 _logger.info("Updating stock for variant." + str(_stock) )
                 #wh = self.env['stock.location'].search([('usage','=','internal')]).id
-                wh = product._meli_get_location_id(meli_id=product.id,meli=meli,config=config)
+                #wh = product._meli_get_location_id(meli_id=product.id,meli=meli,config=config)
+                wh = product._meli_get_location_id( meli_id=meli_id, meli=meli, config=config )
                 _logger.info("Updating stock for variant. location: " + str(wh and wh.display_name) )
                 #product_uom_id = uomobj.search([('name','=','Unidad(es)')])
                 #if (product_uom_id.id==False):
@@ -1175,6 +1179,10 @@ class product_product(models.Model):
         product.meli_condition = product.meli_condition or product_tmpl.meli_condition
         product.meli_warranty = product.meli_warranty or product_tmpl.meli_warranty
 
+        #TODO: check
+        product.meli_shipping_mode =  product.meli_shipping_mode or product_tmpl.meli_shipping_mode
+        product.meli_shipping_method =  product.meli_shipping_method or product_tmpl.meli_shipping_method
+
         product.meli_brand = product.meli_brand or product_tmpl.meli_brand
         product.meli_model = product.meli_model or product_tmpl.meli_model
         product.meli_brand = product_tmpl.meli_brand
@@ -1288,6 +1296,22 @@ class product_product(models.Model):
             "plain_text": product.meli_description or '',
         }
 
+        #product.meli_shipping_mode and body.update({ "shipping_mode": product.meli_shipping_mode })
+        #product.meli_shipping_method and body.update({ "shipping_method": product.meli_shipping_method })
+        shipping = {
+            "mode": "not_specified",
+            #"local_pick_up": false,
+            #"free_shipping": false,
+            #"methods": [],
+            #"dimensions": null,
+            #"tags": [],
+            #"logistic_type": "not_specified",
+            #"store_pick_up": false
+        }
+        product.meli_shipping_mode and  shipping.update( { "mode": product.meli_shipping_mode })
+        product.meli_shipping_method and  shipping.update( { "methods": [ { "id": product.meli_shipping_method } ] } )
+        shipping and body.update({ "shipping": shipping })
+        _logger.info("shipping mode:"+str(shipping))
         #store id
         if config.mercadolibre_official_store_id:
             body["official_store_id"] = config.mercadolibre_official_store_id
