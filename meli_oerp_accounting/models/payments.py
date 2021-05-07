@@ -61,7 +61,7 @@ class MeliPayment(models.Model):
                 'amount': self.total_paid_amount,
                 }
         acct_payment_id = self.env['account.payment'].create(vals_payment)
-        acct_payment_id.post()
+        acct_payment_id.action_post()
         self.account_payment_id = acct_payment_id.id
 
     def create_supplier_payment(self):
@@ -97,7 +97,7 @@ class MeliPayment(models.Model):
                 'amount': self.fee_amount,
                 }
         acct_payment_id = self.env['account.payment'].create(vals_payment)
-        acct_payment_id.post()
+        acct_payment_id.action_post()
         self.account_supplier_payment_id = acct_payment_id.id
 
     def create_supplier_payment_shipment(self):
@@ -135,7 +135,7 @@ class MeliPayment(models.Model):
                 'amount': self.order_id.shipping_list_cost,
                 }
         acct_payment_id = self.env['account.payment'].create(vals_payment)
-        acct_payment_id.post()
+        acct_payment_id.action_post()
         self.account_supplier_payment_shipment_id = acct_payment_id.id
 
     account_payment_id = fields.Many2one('account.payment',string='Pago')
