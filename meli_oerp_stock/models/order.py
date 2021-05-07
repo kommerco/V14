@@ -42,6 +42,9 @@ class SaleOrder(models.Model):
                 or order.meli_shipment_logistic_type=="fulfillment"):
                 #seleccionar almacen para la orden
                 order.warehouse_id = order._meli_get_warehouse_id(config=config)
+            order_type = self.env["mercadolibre.orders"].get_sale_order_type( config=config, sale_order=order, shipment=(order and order.meli_shipment) )
+            if order_type and "type_id" in order_type:
+                order.type_id = order_type["type_id"]
 
 
     def _meli_get_warehouse_id( self, config=None ):
@@ -66,7 +69,7 @@ class SaleOrder(models.Model):
 
         self._meli_order_update(config=config)
 
-        super(SaleOrder, self).confirm_ml(meli=meli,config=config)
+        super(SaleOrder, self).confirm_ml( meli=meli, config=config )
 
         #seleccionar en la confirmacion del stock.picking la informacion del carrier
         #
@@ -115,6 +118,7 @@ class MercadolibreOrder(models.Model):
                                         break;
 
             mapped_sku = (mapping_meli_sku_defaut_code and seller_sku in mapping_meli_sku_defaut_code and mapping_meli_sku_defaut_code[seller_sku])
+            mapped_sku = mapped_sku or self.env['meli_oerp.sku.rule'].map_to_sku(name=seller_sku)
             odoo_sku = mapped_sku or filtered or seller_sku
 
         if mapped_sku:
@@ -143,16 +147,20 @@ class MercadolibreOrder(models.Model):
                 seller_sku = ('seller_custom_field' in meli_item and meli_item['seller_custom_field'])
             if (seller_sku):
                 product_related = product_obj.search([('default_code','=',seller_sku)])
+            if not product_related:
+                order = self
+                order and order.message_post(body=str('seller sku not founded: '+str(seller_sku)))
 
         #product_obj = self.env['product.product']
 
         return product_related
 
+    def get_sale_order_type( self, meli=None, order_json=None, config=None, sale_order=None, shipment=None ):
 
-    def prepare_sale_order_vals( self, meli=None, order_json=None, config=None, sale_order=None, shipment=None ):
-        meli_order_fields = super(MercadolibreOrder, self).prepare_sale_order_vals(meli=meli, order_json=order_json, config=config, sale_order=sale_order, shipment=shipment )
+        meli_order_fields =  {}
 
-        if ('sale.order.type' in self.env):
+        if ('sale.order.type' in self.env and shipment and sale_order):
+
             so_type_log_id = None
             so_type_log = None
 
@@ -172,6 +180,22 @@ class MercadolibreOrder(models.Model):
 
             so_type_log_id = so_type_log and so_type_log.id
             meli_order_fields["type_id"] = so_type_log_id
+
+        return meli_order_fields
+
+    def prepare_sale_order_vals( self, meli=None, order_json=None, config=None, sale_order=None, shipment=None ):
+        meli_order_fields = super(MercadolibreOrder, self).prepare_sale_order_vals(meli=meli, order_json=order_json, config=config, sale_order=sale_order, shipment=shipment )
+        if ('sale.order.type' in self.env and shipment):
+            meli_order_fields.update( self.get_sale_order_type(meli=meli, order_json=order_json, config=config, sale_order=sale_order, shipment=shipment) )
+
+        wh_id = None
+        if (config.mercadolibre_stock_warehouse):
+            wh_id = config.mercadolibre_stock_warehouse
+        if (self.shipment_logistic_type == "fulfillment"):
+            if (config.mercadolibre_stock_warehouse_full):
+                wh_id = config.mercadolibre_stock_warehouse_full
+        if wh_id:
+            meli_order_fields.update({'warehouse_id': wh_id.id })
         _logger.info("prepare_sale_order_vals > meli_order_fields:"+str(meli_order_fields))
         return meli_order_fields
 
